@@ -1,0 +1,10 @@
+anthropic
+langgraph
+pandas
+numpy
+scikit-learn
+scipy
+plotly
+streamlit
+pydantic
+python-dotenv
