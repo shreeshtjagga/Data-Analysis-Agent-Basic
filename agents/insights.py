@@ -10,10 +10,19 @@ from core.state import AnalysisState
 load_dotenv()
 
 
+def get_api_key():
+    try:
+        import streamlit as st
+        return st.secrets.get("GROQ_API_KEY")
+    except Exception:
+        return os.getenv("GROQ_API_KEY")
+
+
 def run(state: AnalysisState) -> AnalysisState:
     print("[insights] starting")
     try:
-        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        client = Groq(api_key=get_api_key())
+        print("KEY:", get_api_key()[:15])
 
         prompt = f"""
 You are a senior data analyst. Analyze the statistics below and return ONLY
