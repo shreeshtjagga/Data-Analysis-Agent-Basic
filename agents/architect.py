@@ -1,23 +1,30 @@
-from core.state import AnalysisState
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pandas as pd
 import numpy as np
+from core.state import AnalysisState
+
 
 def run(state: AnalysisState) -> AnalysisState:
-    print(f"[architect] starting — file: {state.file_path}")
+    print("[architect] starting")
     try:
         df = pd.read_csv(state.file_path)
         state.raw_df = df.copy()
 
+        # fix column types
         for col in df.columns:
-            converted = pd.to_numeric(df[col], errors='ignore')
+            converted = pd.to_numeric(df[col], errors="ignore")
             if converted.dtype != df[col].dtype:
                 df[col] = converted
             if df[col].dtype == object:
                 try:
                     df[col] = pd.to_datetime(df[col])
-                except:
+                except Exception:
                     pass
 
+        # fill missing values
         for col in df.columns:
             if df[col].isnull().sum() > 0:
                 if df[col].dtype in [np.float64, np.int64]:
