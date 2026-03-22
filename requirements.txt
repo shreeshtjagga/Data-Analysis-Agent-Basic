@@ -1,10 +1,11 @@
-google-genai
+groq
 langgraph
 pandas
 numpy
 scikit-learn
 scipy
 plotly
-streamlit
+streamlit==1.43.0
 pydantic
 python-dotenv
+altair==5.5.0
