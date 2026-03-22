@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import json
-import anthropic
+from groq import Groq
 from dotenv import load_dotenv
 from core.state import AnalysisState
 
@@ -13,7 +13,7 @@ load_dotenv()
 def run(state: AnalysisState) -> AnalysisState:
     print("[insights] starting")
     try:
-        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
         prompt = f"""
 You are a senior data analyst. Analyze the statistics below and return ONLY
@@ -29,13 +29,12 @@ Required format:
   "recommendations": ["recommendation 1", "recommendation 2"]
 }}
 """
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1000,
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}]
         )
 
-        state.insights = json.loads(response.content[0].text.strip())
+        state.insights = json.loads(response.choices[0].message.content.strip())
         print("[insights] done")
 
     except Exception as e:

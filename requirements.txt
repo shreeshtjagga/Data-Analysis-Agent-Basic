@@ -1,4 +1,4 @@
-anthropic
+google-genai
 langgraph
 pandas
 numpy
