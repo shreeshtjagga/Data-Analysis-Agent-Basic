@@ -1,0 +1,16 @@
+version: '3'
+services:
+  data-analysis-agent:
+    image: data-analysis-agent:latest
+    ports:
+      - '8501:8501' 
+    environment:
+      - SOME_ENV_VAR=value
+    volumes:
+      - ./data:/data
+    networks:
+      - data-network
+
+networks:
+  data-network:
+    driver: bridge
