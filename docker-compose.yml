@@ -1,16 +1,28 @@
-version: '3'
+version: '3.8'
+
 services:
-  data-analysis-agent:
-    image: data-analysis-agent:latest
-    ports:
-      - '8501:8501' 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
-      - SOME_ENV_VAR=value
+      - ENV_VAR1=value1
+      - ENV_VAR2=value2
     volumes:
       - ./data:/data
-    networks:
-      - data-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:80']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-networks:
-  data-network:
-    driver: bridge
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
