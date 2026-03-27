@@ -1,6 +1,4 @@
-# Dockerfile
-
-FROM python:3.11
+FROM python:3.11-slim
 
 # Set the working directory
 WORKDIR /app
@@ -17,5 +15,8 @@ COPY . .
 # Expose port 8501 for Streamlit
 EXPOSE 8501
 
+# Health check
+HEALTHCHECK CMD curl -f http://localhost:8501 || exit 1
+
 # Command to run the application
-CMD [ "streamlit", "run", "your_script.py"]
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
