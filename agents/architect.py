@@ -1,18 +1,13 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import pandas as pd
+import logging
 import numpy as np
+import pandas as pd
 from core.state import AnalysisState
-
-
+logger = logging.getLogger(__name__)
 def run(state: AnalysisState) -> AnalysisState:
-    print("[architect] starting")
+    logger.info("Architect starting")
     try:
         df = pd.read_csv(state.file_path)
         state.raw_df = df.copy()
-
         # fix column types
         for col in df.columns:
             converted = pd.to_numeric(df[col], errors="ignore")
@@ -23,7 +18,6 @@ def run(state: AnalysisState) -> AnalysisState:
                     df[col] = pd.to_datetime(df[col])
                 except Exception:
                     pass
-
         # fill missing values
         for col in df.columns:
             if df[col].isnull().sum() > 0:
@@ -31,22 +25,10 @@ def run(state: AnalysisState) -> AnalysisState:
                     df[col] = df[col].fillna(df[col].median())
                 else:
                     df[col] = df[col].fillna(df[col].mode()[0])
-
         df = df.drop_duplicates()
         state.clean_df = df
-        print(f"[architect] done — shape: {df.shape}")
-
+        logger.info("Architect done -- shape: %s", df.shape)
     except Exception as e:
         state.errors.append(f"architect error: {str(e)}")
-        print(f"[architect] error: {e}")
-
+        logger.exception("Architect error")
     return state
-
-
-if __name__ == "__main__":
-    state = AnalysisState(file_path="test_data.csv")
-    result = run(state)
-    print("Shape:", result.clean_df.shape)
-    print("Columns:", result.clean_df.columns.tolist())
-    print("Nulls:", result.clean_df.isnull().sum().to_dict())
-    print("Errors:", result.errors)

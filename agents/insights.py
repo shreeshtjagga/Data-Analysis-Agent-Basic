@@ -1,36 +1,36 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import json
-from groq import Groq
+import logging
+import os
 from dotenv import load_dotenv
+from groq import Groq
 from core.state import AnalysisState
-
 load_dotenv()
-
-
-def get_api_key():
+logger = logging.getLogger(__name__)
+def _get_api_key() -> str:
+    """Resolve API key from Streamlit secrets or environment."""
     try:
         import streamlit as st
-        return st.secrets.get("GROQ_API_KEY")
+        key = st.secrets.get("GROQ_API_KEY")
+        if key:
+            return key
     except Exception:
-        return os.getenv("GROQ_API_KEY")
-
-
+        pass
+    return os.getenv("GROQ_API_KEY", "")
 def run(state: AnalysisState) -> AnalysisState:
-    print("[insights] starting")
+    """Generate AI-powered insights from the statistical summary."""
+    logger.info("Insights starting")
     try:
-        client = Groq(api_key=get_api_key())
-        print("KEY:", get_api_key()[:15])
-
+        api_key = _get_api_key()
+        if not api_key:
+            raise ValueError(
+                "GROQ_API_KEY not found. Set it in .env or Streamlit secrets."
+            )
+        client = Groq(api_key=api_key)
         prompt = f"""
 You are a senior data analyst. Analyze the statistics below and return ONLY
-a raw JSON object — no explanation, no markdown, no code fences.
-
+a raw JSON object -- no explanation, no markdown, no code fences.
 Statistics:
 {json.dumps(state.stats_summary, indent=2)}
-
 Required format:
 {{
   "key_findings": ["finding 1", "finding 2", "finding 3"],
@@ -40,35 +40,23 @@ Required format:
 """
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
-
-        state.insights = json.loads(response.choices[0].message.content.strip())
-        print("[insights] done")
-
+        raw = response.choices[0].message.content.strip()
+        # Strip markdown fences if the model wraps them
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1]
+        if raw.endswith("```"):
+            raw = raw.rsplit("```", 1)[0]
+        raw = raw.strip()
+        state.insights = json.loads(raw)
+        logger.info("Insights done")
     except Exception as e:
         state.errors.append(f"insights error: {str(e)}")
         state.insights = {
             "key_findings": ["Could not generate insights"],
             "anomalies": [],
-            "recommendations": []
+            "recommendations": [],
         }
-        print(f"[insights] error: {e}")
-
+        logger.exception("Insights error")
     return state
-
-
-if __name__ == "__main__":
-    state = AnalysisState(file_path="test_data.csv")
-    state.stats_summary = {
-        "shape": [100, 5],
-        "columns": ["date", "region", "revenue", "age", "units_sold"],
-        "nulls": {"revenue": 0, "age": 1},
-        "top_correlations": [["age", "revenue", 0.83]],
-        "outliers": {"revenue": {"count": 1, "rows": [50]}}
-    }
-    result = run(state)
-    if result.errors:
-        print("Errors:", result.errors)
-    else:
-        print(json.dumps(result.insights, indent=2))

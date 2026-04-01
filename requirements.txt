@@ -9,3 +9,4 @@ streamlit==1.43.0
 pydantic
 python-dotenv
 altair==5.5.0
+statsmodels
