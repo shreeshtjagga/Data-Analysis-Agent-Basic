@@ -1,30 +1,35 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+"""Statistician agent -- computes descriptive stats, outliers, and correlations."""
 
-import pandas as pd
+import logging
+
 import numpy as np
+import pandas as pd
+
 from core.state import AnalysisState
+
+logger = logging.getLogger(__name__)
 
 
 def run(state: AnalysisState) -> AnalysisState:
-    print("[statistician] starting")
+    """Compute descriptive statistics, outliers, and correlations."""
+    logger.info("Statistician starting")
     try:
         df = state.clean_df
-        summary = {}
+        summary: dict = {}
 
         numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
         cat_cols = df.select_dtypes(include="object").columns.tolist()
 
         summary["shape"] = list(df.shape)
         summary["columns"] = df.columns.tolist()
+        summary["dtypes"] = {col: str(df[col].dtype) for col in df.columns}
         summary["nulls"] = df.isnull().sum().to_dict()
 
         if numeric_cols:
             summary["describe"] = df[numeric_cols].describe().round(2).to_dict()
 
         # outlier detection via IQR
-        outliers = {}
+        outliers: dict = {}
         for col in numeric_cols:
             q1 = df[col].quantile(0.25)
             q3 = df[col].quantile(0.75)
@@ -53,22 +58,13 @@ def run(state: AnalysisState) -> AnalysisState:
         }
 
         state.stats_summary = summary
-        print(f"[statistician] done — {len(numeric_cols)} numeric, {len(cat_cols)} categorical")
+        logger.info(
+            "Statistician done -- %d numeric, %d categorical",
+            len(numeric_cols), len(cat_cols),
+        )
 
     except Exception as e:
         state.errors.append(f"statistician error: {str(e)}")
-        print(f"[statistician] error: {e}")
+        logger.exception("Statistician error")
 
     return state
-
-
-if __name__ == "__main__":
-    state = AnalysisState(file_path="test_data.csv")
-    state.clean_df = pd.read_csv("test_data.csv")
-    result = run(state)
-    if result.errors:
-        print("Errors:", result.errors)
-    else:
-        print("Summary keys:", list(result.stats_summary.keys()))
-        print("Outliers:", result.stats_summary.get("outliers"))
-        print("Correlations:", result.stats_summary.get("top_correlations"))

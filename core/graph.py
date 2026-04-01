@@ -1,13 +1,13 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+"""Build the LangGraph analysis pipeline."""
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
+
+from agents import architect, insights, statistician, visualizer
 from core.state import AnalysisState
-from agents import architect, statistician, visualizer, insights
 
 
 def build_graph():
+    """Architect -> Statistician -> Visualizer -> Insights."""
     graph = StateGraph(AnalysisState)
 
     graph.add_node("architect", architect.run)
