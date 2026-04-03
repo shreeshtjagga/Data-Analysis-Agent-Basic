@@ -97,8 +97,7 @@ for key, val in _DEFAULTS.items():
         st.session_state[key] = val
 
 with st.sidebar:
-    st.markdown("## 📊 Data Analysis Agent")
-    st.caption("AI-powered multi-agent CSV analysis pipeline")
+    st.markdown("## Data Analysis Agent")
     st.divider()
     uploaded_file = st.file_uploader(
         "Upload your CSV file",
@@ -109,18 +108,9 @@ with st.sidebar:
         st.success(f"**{uploaded_file.name}** ({uploaded_file.size / 1024:.1f} KB)")
     run_clicked = st.button("Run Analysis", type="primary", disabled=not uploaded_file)
     st.divider()
-    st.markdown(
-        "**Pipeline stages**\n"
-        "1. Architect -- clean & type-cast\n"
-        "2. Statistician -- descriptive stats\n"
-        "3. Visualizer -- smart charts\n"
-        "4. Insights -- AI recommendations"
-    )
-    st.divider()
-    st.caption("Built with Streamlit + LangGraph + Groq")
 
 if run_clicked and uploaded_file:
-    progress = st.progress(0, text="Starting pipeline...")
+    progress = st.progress(0, text="Analyzing the data")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
         tmp.write(uploaded_file.read())
         tmp_path = tmp.name
@@ -145,16 +135,12 @@ if run_clicked and uploaded_file:
 
 result = st.session_state["analysis_result"]
 if result is None:
-    # Landing page
     st.markdown(
         """
         # Welcome to Data Analysis Agent
         Upload a CSV file in the sidebar and click **Run Analysis** to get
-        started. The 4-agent pipeline will:
-        - **Clean & type-cast** your data automatically
-        - **Compute** descriptive statistics, outliers, and correlations
-        - **Generate** only the most relevant charts for your data
-        - **Provide** AI-powered insights and recommendations
+        started.
+        
         """
     )
     st.stop()

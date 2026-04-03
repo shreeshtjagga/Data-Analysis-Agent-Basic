@@ -7,7 +7,6 @@ from core.state import AnalysisState
 load_dotenv()
 logger = logging.getLogger(__name__)
 def _get_api_key() -> str:
-    """Resolve API key from Streamlit secrets or environment."""
     try:
         import streamlit as st
         key = st.secrets.get("GROQ_API_KEY")
