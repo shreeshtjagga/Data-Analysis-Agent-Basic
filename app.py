@@ -276,7 +276,7 @@ st.markdown(
 # Warnings banner
 errors = result.get("errors", [])
 if errors:
-    with st.expander("⚠️ Processing warnings", expanded=False):
+    with st.expander("⚠️ Processing warnings", expanded=True):
         for err in errors:
             st.warning(err)
 
