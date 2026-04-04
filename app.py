@@ -200,8 +200,11 @@ with st.sidebar:
         type=["csv"],
         help="CSV files up to 200 MB. Data is processed locally.",
     )
+    
     if uploaded_file:
         st.success(f"✅ **{uploaded_file.name}**", icon=None)
+        # Store the uploaded file in session state
+        st.session_state["uploaded_file"] = uploaded_file
 
     st.markdown("<br>", unsafe_allow_html=True)
     run_clicked = st.button(
@@ -226,18 +229,30 @@ with st.sidebar:
 # ── Run pipeline ──────────────────────────────────────────────────────────────
 if run_clicked and uploaded_file:
     with st.spinner("🤖 Running analysis pipeline…"):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-            tmp.write(uploaded_file.read())
-            tmp_path = tmp.name
         try:
-            result = build_graph().invoke({"file_path": tmp_path})
-            st.session_state["analysis_result"] = result
-            st.session_state["uploaded_file_name"] = uploaded_file.name
-        except Exception as exc:
-            st.error(f"Pipeline error: {exc}")
-            logger.exception("Pipeline error")
-        finally:
-            os.unlink(tmp_path)
+            # Reset the file pointer to beginning before reading
+            uploaded_file.seek(0)
+            
+            # Create temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+                tmp.write(uploaded_file.getvalue())
+                tmp_path = tmp.name
+            
+            try:
+                result = build_graph().invoke({"file_path": tmp_path})
+                st.session_state["analysis_result"] = result
+                st.session_state["uploaded_file_name"] = uploaded_file.name
+                st.rerun()  # Rerun to display results
+            except Exception as exc:
+                st.error(f"Pipeline error: {exc}")
+                logger.exception("Pipeline error")
+            finally:
+                # Clean up temp file
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+        except Exception as e:
+            st.error(f"Error processing file: {e}")
+            logger.exception("File processing error")
 
 # ── Retrieve result ───────────────────────────────────────────────────────────
 result = st.session_state["analysis_result"]
@@ -535,7 +550,7 @@ with tab_data:
     with col_r:
         if clean is not None:
             st.markdown('<p class="section-title">Cleaned Dataset</p>', unsafe_allow_html=True)
-            st.caption("First 100 rows after cleaning")
+            st.caption("First 100 rows after processing")
             st.dataframe(clean.head(100), use_container_width=True)
             buf = io.BytesIO()
             clean.to_csv(buf, index=False)
