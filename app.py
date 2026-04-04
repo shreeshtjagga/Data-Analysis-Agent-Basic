@@ -174,7 +174,7 @@ st.markdown(
 )
 
 # ── Session state ─────────────────────────────────────────────────────────────
-for k, v in {"analysis_result": None, "uploaded_file_name": None}.items():
+for k, v in {"analysis_result": None, "uploaded_file_name": None, "file_bytes": None}.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
@@ -203,14 +203,18 @@ with st.sidebar:
     
     if uploaded_file:
         st.success(f"✅ **{uploaded_file.name}**", icon=None)
-        # Store the uploaded file in session state
-        st.session_state["uploaded_file"] = uploaded_file
+        # Store file bytes in session state to preserve it
+        if st.session_state.get("uploaded_file_name") != uploaded_file.name:
+            st.session_state["file_bytes"] = uploaded_file.getvalue()
+            st.session_state["uploaded_file_name"] = uploaded_file.name
+            # Clear previous results when new file is uploaded
+            st.session_state["analysis_result"] = None
 
     st.markdown("<br>", unsafe_allow_html=True)
     run_clicked = st.button(
         "⚡ Generate Analysis",
         type="primary",
-        disabled=not uploaded_file,
+        disabled=not uploaded_file and not st.session_state.get("file_bytes"),
     )
 
     st.divider()
@@ -227,21 +231,22 @@ with st.sidebar:
     )
 
 # ── Run pipeline ──────────────────────────────────────────────────────────────
-if run_clicked and uploaded_file:
+if run_clicked and st.session_state.get("file_bytes"):
     with st.spinner("🤖 Running analysis pipeline…"):
         try:
-            # Reset the file pointer to beginning before reading
-            uploaded_file.seek(0)
+            # Use the stored file bytes from session state
+            file_bytes = st.session_state["file_bytes"]
             
             # Create temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-                tmp.write(uploaded_file.getvalue())
+                tmp.write(file_bytes)
                 tmp_path = tmp.name
             
             try:
+                # Invoke the pipeline
                 result = build_graph().invoke({"file_path": tmp_path})
                 st.session_state["analysis_result"] = result
-                st.session_state["uploaded_file_name"] = uploaded_file.name
+                st.success("✅ Analysis complete!")
                 st.rerun()  # Rerun to display results
             except Exception as exc:
                 st.error(f"Pipeline error: {exc}")
