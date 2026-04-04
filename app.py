@@ -305,7 +305,15 @@ tab_summary, tab_charts, tab_insights, tab_stats, tab_data = st.tabs(
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_summary:
     if not summ:
-        st.info("No summary available.", icon="ℹ️")
+        st.warning(
+            "⚠️ Summary agent did not return data. "
+            "Check the **Processing warnings** expander above for error details. "
+            "If no warnings are shown, try clicking **Generate Analysis** again.",
+        )
+        with st.expander("🔍 Debug info", expanded=True):
+            st.write("**result keys:**", list(result.keys()))
+            st.write("**summary value:**", result.get("summary"))
+            st.write("**errors:**", result.get("errors", []))
     else:
         hs = summ.get("health_score", 0)
         if hs >= 75:
@@ -512,4 +520,4 @@ with tab_data:
             st.dataframe(clean.head(100), use_container_width=True)
             buf = io.BytesIO()
             clean.to_csv(buf, index=False)
-            st.download_button("📥 Download Cleaned CSV", buf.getvalue(), "cleaned_data.csv", "text/csv")
+            st.download_button(" Download Cleaned CSV", buf.getvalue(), "cleaned_data.csv", "text/csv")
